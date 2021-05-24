@@ -1,0 +1,108 @@
+<!--
+Questionnaire (main HTML file)
+Bach Lab, University College London
+Juliana Sporrer, 05.2021
+Version: 1.0.0
+jspsych version: 6.2.0
+
+-->
+<!DOCTYPE html>
+<html>
+<head>
+      <meta charset="utf-8"/>
+      <title> Questionnaires </title>
+      <!-- import the library, should be downloaded and put into your experiment folder -->
+      <script   src = "jspsych-master/jspsych.js"></script>
+      <link     href= "jspsych-master/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+      <!-- every plugin that you use needs to be added in the head -->
+      <script   src = "jspsych-master/plugins_JS/survey_text_JS.js"></script>
+      <script   src = "jspsych-master/plugins_JS/survey_multi_choice_JS.js"></script>
+      <script   src = "jspsych-master/plugins_JS/fullscreen_JS.js"></script>
+      <script   src = "jspsych-master/plugins_JS/html_keyboard_response_JS.js"></script>
+      <!-- add the external functions-->
+      <script   src = "js/getBrowserInfo.js"></script>
+      <script   src = "js/quest.js"></script>
+      <!-- add the jatos
+      <script   src = "/assets/javascripts/jatos.js"></script> -->
+      <!-- remove the cursor  -->
+      <style    id ="cursornone"> html { cursor: none; };  </style>
+</head>
+<body>
+      <div id='jspsych-target' class='center-content'></div>
+</body>
+<script type="application/javascript">
+
+// --------------------------------- PARAMETERS --------------------------------//
+
+var debug           = false; // if true, skips fullscreen and info
+
+
+// --------------------------------- INITIALISATION  ---------------------------//
+
+// Remove the cursor which can be distracting
+let cursornone = document.getElementById("cursornone").innerHTML;
+
+// Create "Variable/function" that makes sure you remain in FullScreen
+var firstFullscreen = {
+      type: 'fullscreen',
+      message:'<p> To take part in the experiment, your browser must be in fullscreen mode. </p> <p>Exiting fullscreen mode will pause the experiment. </p> <p> Please click the button below to enable fullscreen mode and continue.</p>',
+      button_label: 'Put in Fullscreen',
+      data: {test_part: 'firstFullscreen',},
+};
+
+var subdetails = {
+      type: 'survey-text',
+      preamble: ['<p style = "text-align: center; font-size: 28px">Please enter the following:</p>'],
+      questions: [
+            {prompt: "ID?", rows: 1, columns: 40, required:true},
+            //{prompt: "Gender?", rows: 1, columns: 40, required:true, options: ['Female', 'Male', 'Other / prefer not to say']},
+            //{prompt: "Age?", rows: 1, columns: 40, required:true, options: Array(53).fill().map((_, i) => i+18)}
+      ],
+      data: {test_part: 'subdetails',},
+      on_start: function(){
+            var res = cursornone.replace("none", "default");
+            document.getElementById("cursornone").innerHTML = res;
+      },
+      on_finish: function(){
+            var res = cursornone.replace("default", "none");
+            document.getElementById("cursornone").innerHTML = res;
+      },
+};
+
+// --------------------------------- BEGINING EXPERIMENT  --------------------------------- //
+
+var subject_id    = jsPsych.randomization.randomID(10);
+
+var exp_timeline = [];
+
+if(debug == false){
+      exp_timeline.push(firstFullscreen);
+      exp_timeline.push(subdetails);
+};
+
+//questionnaires
+var quest    = quest();
+for(var i = 0; i < quest.length; i++){exp_timeline.push(quest[i]);};
+
+// Execute the whole experiment's timeline
+jsPsych.init({
+      preload_images:["img/iq_1.png","img/iq_1_a.png","img/iq_2.png","img/iq_2_a.png","img/iq_3.png","img/iq_3_a.png","img/iq_4.png","img/iq_4_a.png","img/iq_5.png","img/iq_6.png","img/iq_7.png","img/iq_8.png",],
+      timeline: exp_timeline,
+      fullscreen: true,
+      show_progress_bar: true,
+      on_trial_finish: function() {
+            jsPsych.data.addProperties({subject_id: subject_id});
+            var data = JSON.parse(jsPsych.data.getLastTrialData().json());
+      },
+      on_finish: function() {
+            // to debug
+            var resp = jsPsych.data.get().filter({test_part: "subdetails"}).values()[0].responses;
+            var exp_id = resp.slice(7,resp.length-2);
+            fn_data = 'data_'+exp_id+'.csv';
+            jsPsych.data.get().localSave('csv',fn_data);
+            //jsPsych.data.displayData(); // Disable once online, use to look at data while coding
+      },
+});
+
+</script>
+</html>
